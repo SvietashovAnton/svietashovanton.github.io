@@ -37,3 +37,9 @@ p {
     margin-top: 64px;
     text-align: center;
 }
+
+img {
+ display: block;
+  right: 20px;
+  top: 20px;
+}
