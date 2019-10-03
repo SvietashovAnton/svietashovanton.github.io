@@ -39,7 +39,8 @@ p {
 }
 
 img {
- display: block;
+ display: float;
+  text-align: right;
   right: 20px;
   top: 20px;
 }
