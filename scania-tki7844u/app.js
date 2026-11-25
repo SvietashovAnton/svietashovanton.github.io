@@ -1,9 +1,12 @@
-/* Ставка рейса — калькулятор ставки, месячный план, журнал рейсов и диаграммы.
+/* Бортовой журнал Scania TKI7844U (водитель Андрей) — калькулятор ставки, месячный план, журнал рейсов и диаграммы.
    Логика повторяет формулы рабочей книги Excel (листы «Калькулятор», «Месяц», «Рейсы», «Диаграммы», «ТО и ремонты»). */
 (function () {
   'use strict';
 
-  const STORE_KEY = 'trip-rate-calculator-v1';
+  // Приложение ведётся для одного автомобиля и одного водителя: данные хранятся под отдельным ключом.
+  const VEHICLE = 'Scania TKI7844U', DRIVER = 'Андрей';
+  const STORE_KEY = 'logbook-scania-TKI7844U-v1';
+  const OLD_STORE_KEY = 'trip-rate-calculator-v1';
 
   // ---------- Округление как в Excel ----------
   const EPS = 1e-9;
@@ -95,7 +98,8 @@
   let state = load();
   function load() {
     try {
-      const raw = localStorage.getItem(STORE_KEY);
+      let raw = localStorage.getItem(STORE_KEY);
+      if (!raw) { raw = localStorage.getItem(OLD_STORE_KEY); if (raw) localStorage.setItem(STORE_KEY, raw); }
       if (raw) { const s = JSON.parse(raw); return mergeDefaults(s); }
     } catch (e) { /* хранилище недоступно */ }
     return defaultState();
@@ -893,7 +897,7 @@
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     const rows = MR.trips.map(t => [fmtDate(t.date), q(t.no), q(t.route), f(t.routeKm), f(t.approachKm), f(t.totalKm), f(t.freight), f(isNum(t.skonto) ? t.skonto * 100 : null), f(t.receivable), f(t.ratePerKm), f(isNum(t.margin) ? t.margin * 100 : null), f(t.profit), f(t.costNoPrem), f(isNum(t.premium) ? t.premium * 100 : null), f(t.costWithPrem), f(t.diesel), f(t.adblue), f(t.salary), f(t.fixed), f(t.tolls), f(t.other), q(t.status), q(t.comment)].join(';'));
     const csv = '﻿' + head.join(';') + '\n' + rows.join('\n');
-    download('reisy.csv', csv, 'text/csv;charset=utf-8');
+    download('reisy-scania-TKI7844U.csv', csv, 'text/csv;charset=utf-8');
     showIO('CSV журнала рейсов', csv.slice(1), false);
   };
   function showIO(title, text, importable) {
@@ -912,9 +916,9 @@
       if (p) p.then(() => toast('Скопировано'), () => { ta.select(); toast('Выделено — нажмите Ctrl+C'); }); else { ta.select(); }
     };
     if (importable) {
-      $('io-dl').onclick = () => download('stavka-reisa-' + (MR.calcDate || 'data') + '.json', JSON.stringify(state, null, 1), 'application/json');
+      $('io-dl').onclick = () => download('bortovoj-zhurnal-scania-TKI7844U-' + (MR.calcDate || 'data') + '.json', JSON.stringify(Object.assign({ vehicle: VEHICLE, driver: DRIVER }, state), null, 1), 'application/json');
       $('io-load').onclick = () => {
-        try { const s = JSON.parse($('io-text').value); if (!s.month || !s.trips) throw new Error('fmt'); state = mergeDefaults(s); save(); renderAll(); dlg.close(); toast('Данные загружены'); }
+        try { const s = JSON.parse($('io-text').value); if (!s.month || !s.trips) throw new Error('fmt'); if (s.vehicle && s.vehicle !== VEHICLE) { toast('Это копия для другого автомобиля (' + s.vehicle + '). Загрузите копию ' + VEHICLE + '.'); return; } delete s.vehicle; delete s.driver; state = mergeDefaults(s); save(); renderAll(); dlg.close(); toast('Данные загружены'); }
         catch (e) { toast('Не удалось прочитать текст: нужен JSON, сохранённый этим приложением'); }
       };
       $('io-reset').onclick = () => { dlg.close(); confirmBox('Заменить все данные примером? Текущие рейсы и настройки будут удалены.', 'Сбросить', () => { state = defaultState(); save(); renderAll(); toast('Загружен пример'); }); };
@@ -922,7 +926,7 @@
     }
     dlg.showModal();
   }
-  $('btn-data').onclick = () => showIO('Данные приложения', JSON.stringify(state, null, 1), true);
+  $('btn-data').onclick = () => showIO('Данные: ' + VEHICLE + ', водитель ' + DRIVER, JSON.stringify(Object.assign({ vehicle: VEHICLE, driver: DRIVER }, state), null, 1), true);
 
   // Импорт рабочей книги Excel (структура исходного файла)
   $('xlsx-file').addEventListener('change', async e => {
