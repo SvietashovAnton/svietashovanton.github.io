@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ставка рейса</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<style>
+/* Layout: sticky tab bar over a single working column; each tab = inputs (amber "cells") left, results right. */
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --line: #d9dde5;
+  --fg: #1b2230;
+  --muted: #5d6778;
+  --accent: #1d4ed8;
+  --accent-soft: #e3eafc;
+  --input: #fff8db;
+  --input-line: #e8cf6a;
+  --good: #15803d;
+  --good-soft: #dcf2e3;
+  --bad: #c2410c;
+  --bad-soft: #fde6d8;
+  --warn: #a16207;
+  --c1: #1d4ed8; --c2: #94a3b8; --c3: #15803d; --c4: #c2410c; --c5: #7c3aed;
+  --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --radius: 8px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #191f29; --surface-2: #212836; --line: #2f3747;
+    --fg: #e6e9ef; --muted: #9aa4b5; --accent: #7aa2ff; --accent-soft: #1f2b4a;
+    --input: #2b2614; --input-line: #6b5a1e;
+    --good: #4ade80; --good-soft: #15301f; --bad: #fb923c; --bad-soft: #3a2214; --warn: #facc15;
+    --c1: #7aa2ff; --c2: #64748b; --c3: #4ade80; --c4: #fb923c; --c5: #c4b5fd;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #191f29; --surface-2: #212836; --line: #2f3747;
+  --fg: #e6e9ef; --muted: #9aa4b5; --accent: #7aa2ff; --accent-soft: #1f2b4a;
+  --input: #2b2614; --input-line: #6b5a1e;
+  --good: #4ade80; --good-soft: #15301f; --bad: #fb923c; --bad-soft: #3a2214; --warn: #facc15;
+  --c1: #7aa2ff; --c2: #64748b; --c3: #4ade80; --c4: #fb923c; --c5: #c4b5fd;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding-block: 10px; }
+.brand { font: 800 18px/1.1 var(--font-display); letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.brand small { font: 500 12px var(--font-body); color: var(--muted); letter-spacing: 0; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; flex: 1 1 auto; }
+nav.tabs button { border: 0; background: none; color: var(--muted); font: 600 14px var(--font-body); padding: 8px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+nav.tabs button:hover { color: var(--fg); }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 13px var(--font-body); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.primary:hover { filter: brightness(1.08); color: var(--surface); }
+.btn.danger { color: var(--bad); }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+main { padding-block: 20px 48px; }
+section.view { display: grid; gap: 16px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 22px; font-weight: 800; }
+h2 { font-size: 16px; font-weight: 700; }
+h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.lead { color: var(--muted); margin: 4px 0 0; max-width: 70ch; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 960px) { .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.note { color: var(--muted); font-size: 12px; margin: 0; }
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 12px; }
+label.f { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+input, select, textarea { font: 14px var(--font-body); color: var(--fg); background: var(--input); border: 1px solid var(--input-line); border-radius: 5px; padding: 6px 8px; width: 100%; min-width: 0; }
+input[type="number"], input.num { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+input::placeholder { color: var(--muted); opacity: 0.7; }
+.kv { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 14px; align-items: baseline; }
+.kv > span:nth-child(3n+1) { color: var(--muted); }
+.kv .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.kv .s { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: right; min-width: 52px; }
+.kv .total { color: var(--fg) !important; font-weight: 600; border-top: 1px solid var(--line); padding-top: 6px; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+th { background: var(--surface-2); font-weight: 600; font-size: 12px; color: var(--muted); white-space: nowrap; position: sticky; top: 0; }
+td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+tfoot td { font-weight: 600; background: var(--surface-2); border-top: 1px solid var(--line); border-bottom: 0; }
+table input { padding: 4px 6px; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--surface-2); }
+tr.future td { color: var(--muted); }
+.pos { color: var(--good); }
+.neg { color: var(--bad); }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.info { background: var(--accent-soft); color: var(--accent); }
+.status { padding: 8px 12px; border-radius: 6px; background: var(--surface-2); font-size: 13px; }
+.status.bad { background: var(--bad-soft); color: var(--bad); }
+.status.good { background: var(--good-soft); color: var(--good); }
+.hero-result { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; gap: 2px; background: var(--surface); }
+#calc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tile .l { font-size: 12px; color: var(--muted); }
+.tile .b { font: 700 22px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.tile .sub { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+.tile.good { border-color: var(--good); background: var(--good-soft); }
+.tile.bad { border-color: var(--bad); background: var(--bad-soft); }
+.offer td.n:first-of-type { font-weight: 600; }
+.bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: var(--surface-2); }
+.bar > i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+.legend b { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.progress { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+details.ref summary { cursor: pointer; font-weight: 600; }
+details.ref[open] summary { margin-bottom: 10px; }
+.chart-box { position: relative; height: 300px; }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+dialog { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--fg); padding: 0; width: min(720px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+dialog form { padding: 18px; display: grid; gap: 14px; }
+.toast { position: fixed; left: 50%; max-width: calc(100vw - 32px); width: max-content; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 16px; border-radius: 6px; font-size: 13px; z-index: 20; }
+textarea.io { font-family: var(--font-mono); font-size: 12px; height: 220px; background: var(--surface-2); border-color: var(--line); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">Ставка рейса <small id="hdr-month"></small></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="calc" aria-selected="true">Калькулятор</button>
+      <button role="tab" data-tab="month">Месяц</button>
+      <button role="tab" data-tab="trips">Рейсы</button>
+      <button role="tab" data-tab="charts">Диаграммы</button>
+      <button role="tab" data-tab="maint">ТО и ремонты</button>
+    </nav>
+    <div class="tools">
+      <label class="btn" for="xlsx-file" title="Загрузить данные из файла Excel с листами «Месяц», «Калькулятор», «Рейсы», «ТО и ремонты»">Импорт .xlsx</label>
+      <input id="xlsx-file" type="file" accept=".xlsx,.xlsm" hidden>
+      <button class="btn" id="btn-data">Данные</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ КАЛЬКУЛЯТОР ============ -->
+<section class="view" id="view-calc">
+  <div>
+    <h1>Калькулятор ставки рейса</h1>
+    <p class="lead">Жёлтые поля для ввода. Зарплата и постоянные расходы распределяются на рейс по месячному плану со вкладки «Месяц».</p>
+  </div>
+  <div class="grid2">
+    <div style="display:grid;gap:16px;min-width:0">
+      <div class="panel">
+        <header><h2>Маршрут и дорожные сборы</h2><button class="btn small" id="add-route">+ участок</button></header>
+        <label class="f">Название рейса<input id="calc-title" data-bind="calc.title" placeholder="Например, DE Kiel — BE Arlon"></label>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Код страны / участок</th><th class="n">Всего км</th><th class="n">Платные км</th><th class="n">€/платный км</th><th class="n">Сумма вручную, €</th><th class="n">Сборы, €</th><th></th></tr></thead>
+          <tbody id="route-body"></tbody>
+          <tfoot><tr><td>Итого по маршруту</td><td class="n" id="route-km"></td><td></td><td></td><td></td><td class="n" id="route-fee"></td><td></td></tr></tfoot>
+        </table></div>
+        <p class="note">Введите код и платные км: тариф подставится из справочника ниже. Сумма вручную имеет приоритет. Для бесплатного участка укажите 0 платных км.</p>
+        <h3>Доезд до загрузки</h3>
+        <div class="fields">
+          <label class="f">Расстояние доезда, км<input id="calc-appkm" class="num" data-bind="calc.approachKm" data-kind="num"></label>
+          <label class="f">Платные км (пусто = весь доезд)<input id="calc-apptoll" class="num" data-bind="calc.approachTollKm" data-kind="num"></label>
+          <label class="f">Тариф, €/км<input id="calc-apprate" class="num" data-bind="calc.approachRate" data-kind="num"></label>
+          <label class="f">Сумма вручную, €<input id="calc-appman" class="num" data-bind="calc.approachManual" data-kind="num"></label>
+        </div>
+        <div class="kv">
+          <span>Сборы за доезд</span><span class="v" id="app-fee"></span><span class="s"></span>
+          <span>Сборы с доездом</span><span class="v" id="route-fee-all"></span><span class="s"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h2>Платные мосты и тоннели</h2><button class="btn small" id="add-bridge">+ объект</button></header>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Код / объект</th><th class="n">Проезды</th><th class="n">€/проезд</th><th class="n">Вручную, €</th><th class="n">Сборы, €</th><th></th></tr></thead>
+          <tbody id="bridge-body"></tbody>
+          <tfoot><tr><td colspan="4">Итого мосты и тоннели</td><td class="n" id="bridge-fee"></td><td></td></tr></tfoot>
+        </table></div>
+        <p class="note">Пустое поле «Проезды» означает один проезд. Каждый сбор вносите один раз: по участку маршрута или здесь.</p>
+      </div>
+
+      <div class="panel">
+        <header><h2>Оплата рейса</h2></header>
+        <div class="fields">
+          <label class="f">Ставка клиента, €<input id="calc-rate" class="num" data-bind="calc.clientRate" data-kind="num"></label>
+          <label class="f">Сконто, %<input id="calc-skonto" class="num" data-bind="calc.skonto" data-kind="pct"></label>
+          <label class="f">Премия экспедитора, % от ставки<input id="calc-prem" class="num" data-bind="calc.premium" data-kind="pct"></label>
+          <label class="f">Прочие расходы, €<input id="calc-other" class="num" data-bind="calc.other" data-kind="num"></label>
+          <label class="f">Дата рейса (для журнала)<input id="calc-date" type="date" data-bind="calc.date" data-kind="date"></label>
+        </div>
+        <h3>Целевые маржи</h3>
+        <div class="fields">
+          <label class="f">Маржа 1, %<input id="calc-m0" class="num" data-bind="calc.margins.0" data-kind="pct"></label>
+          <label class="f">Маржа 2, %<input id="calc-m1" class="num" data-bind="calc.margins.1" data-kind="pct"></label>
+          <label class="f">Маржа 3, %<input id="calc-m2" class="num" data-bind="calc.margins.2" data-kind="pct"></label>
+        </div>
+      </div>
+
+      <details class="panel ref">
+        <summary>Справочник дорожных тарифов ЕС</summary>
+        <p class="note">Ставки без НДС, тягач 40 т, 5 осей, Euro VI, CO₂ класс 1. Жёлтые ставки можно менять; пустая ставка требует готовую сумму.</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Код</th><th>Страна / зона</th><th class="n">€/платный км</th><th>Условия</th><th>Источник</th></tr></thead>
+          <tbody id="tariff-road"></tbody>
+        </table></div>
+        <h3>Мосты и тоннели</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Код</th><th>Объект</th><th class="n">€/проезд</th><th>Условия</th><th>Источник</th></tr></thead>
+          <tbody id="tariff-bridge"></tbody>
+        </table></div>
+        <div class="row-actions"><button class="btn small" id="add-tariff-road">+ свой код дорог</button><button class="btn small" id="add-tariff-bridge">+ свой мост/тоннель</button><button class="btn small danger" id="reset-tariffs">Вернуть исходные тарифы</button></div>
+      </details>
+    </div>
+
+    <div style="display:grid;gap:16px;min-width:0">
+      <div class="panel">
+        <header><h2>Результат</h2><span id="calc-status-pill"></span></header>
+        <div class="hero-result" id="calc-tiles"></div>
+        <div class="status" id="calc-status"></div>
+        <div class="row-actions">
+          <button class="btn primary" id="calc-to-log">Внести в журнал рейсов</button>
+          <span class="note">Создаст запись на вкладке «Рейсы» с пробегом, ставкой и точными сборами.</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h2>Ставки для предложения</h2></header>
+        <div class="tbl-wrap"><table class="offer">
+          <thead><tr><th>Вариант</th><th class="n">€ за рейс</th><th class="n">€ за км</th></tr></thead>
+          <tbody id="offer-body"></tbody>
+        </table></div>
+        <p class="note">Ставки округляются вверх до цента. Маржа = прибыль ÷ сумма к получению (после сконто).</p>
+      </div>
+
+      <div class="panel">
+        <header><h2>Расходы рейса</h2><span class="note" id="calc-km-note"></span></header>
+        <div class="bar" id="cost-bar"></div>
+        <div class="legend" id="cost-legend"></div>
+        <div class="kv" id="cost-kv"></div>
+      </div>
+
+      <div class="panel">
+        <header><h2>Месячный план</h2><span class="note" id="calc-month-date"></span></header>
+        <div class="kv" id="calc-month-kv"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ МЕСЯЦ ============ -->
+<section class="view" id="view-month" hidden>
+  <div>
+    <h1>Месячный план и оставшиеся расходы</h1>
+    <p class="lead">Фактический пробег берётся из журнала рейсов. На дату расчёта обновляйте оплаченные и бесплатные дни.</p>
+  </div>
+  <div class="grid2">
+    <div style="display:grid;gap:16px;min-width:0">
+      <div class="panel">
+        <header><h2>Базовые и целевые данные</h2></header>
+        <div class="fields">
+          <label class="f">Дата расчёта<input id="m-date" type="date" data-bind="month.calcDate" data-kind="date"></label>
+          <label class="f">Дней в месяце (28–31)<input id="m-days" class="num" data-bind="month.days" data-kind="num"></label>
+          <label class="f">Целевой пробег месяца, км<input id="m-target" class="num" data-bind="month.targetKm" data-kind="num"></label>
+          <label class="f">Зарплата водителя, €/день<input id="m-daily" class="num" data-bind="month.driverDaily" data-kind="num"></label>
+          <label class="f">Уже оплаченные дни<input id="m-paid" class="num" data-bind="month.paidDays" data-kind="num"></label>
+          <label class="f">Прошедшие бесплатные дни<input id="m-free" class="num" data-bind="month.freeDays" data-kind="num"></label>
+          <label class="f">Курс, PLN за 1 €<input id="m-pln" class="num" data-bind="month.plnRate" data-kind="num"></label>
+        </div>
+      </div>
+      <div class="panel">
+        <header><h2>Постоянные расходы</h2><button class="btn small" id="add-fixed">+ статья</button></header>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Статья</th><th class="n">PLN / месяц</th><th class="n">€ / месяц</th><th class="n">Итого, €</th><th></th></tr></thead>
+          <tbody id="fixed-body"></tbody>
+          <tfoot><tr><td colspan="3">Итого постоянных расходов</td><td class="n" id="fixed-total"></td><td></td></tr></tfoot>
+        </table></div>
+        <p class="note">Суммы в PLN и евро в одной строке складываются. Пустые статьи равны нулю.</p>
+      </div>
+      <div class="panel">
+        <header><h2>Параметры расчёта рейсов</h2></header>
+        <div class="fields">
+          <label class="f">Дороги: средний тариф, €/км<input id="m-road" class="num" data-bind="month.roadAvg" data-kind="num"></label>
+          <label class="f">Дизель: расход, л/100 км<input id="m-dl" class="num" data-bind="month.dieselL100" data-kind="num"></label>
+          <label class="f">Дизель: цена, €/л<input id="m-dp" class="num" data-bind="month.dieselPrice" data-kind="num"></label>
+          <label class="f">AdBlue: расход, л/100 км<input id="m-al" class="num" data-bind="month.adblueL100" data-kind="num"></label>
+          <label class="f">AdBlue: цена, €/л<input id="m-ap" class="num" data-bind="month.adbluePrice" data-kind="num"></label>
+        </div>
+        <p class="note">Топливо и AdBlue считаются на весь пробег с доездом и используются и в журнале, и в калькуляторе. Средний тариф дорог применяется к рейсу, если точные сборы не указаны.</p>
+      </div>
+      <div class="panel">
+        <header><h2>Начальный пробег (до журнала)</h2></header>
+        <div class="fields">
+          <label class="f">Дата начального пробега<input id="m-initdate" type="date" data-bind="month.initKmDate" data-kind="date"></label>
+          <label class="f">Пробег до журнала, км<input id="m-initkm" class="num" data-bind="month.initKm" data-kind="num"></label>
+          <label class="f">Из них порожний, км<input id="m-initempty" class="num" data-bind="month.initEmptyKm" data-kind="num" placeholder="пусто — неизвестно"></label>
+        </div>
+        <p class="note">Учитывается в своём месяце. При переносе старых рейсов в журнал уменьшайте его на пробег этих рейсов.</p>
+      </div>
+    </div>
+    <div style="display:grid;gap:16px;min-width:0">
+      <div class="panel">
+        <header><h2>Расчёт на выбранную дату</h2></header>
+        <div class="status" id="month-status"></div>
+        <div class="kv" id="month-kv"></div>
+      </div>
+      <div class="panel">
+        <header><h2>Журнал за месяц</h2></header>
+        <div class="kv" id="month-kv2"></div>
+      </div>
+      <div class="panel">
+        <header><h2>Как считается</h2></header>
+        <p class="note">Фактическая зарплата по дням = оплаченные дни × ставка в день. Зарплатные расходы на 1 км = плановая зарплата месяца (все дни минус бесплатные) ÷ целевой пробег. В себестоимости рейса используется эта ставка × общий пробег рейса. В пробег входят рейсы и доезды.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ РЕЙСЫ ============ -->
+<section class="view" id="view-trips" hidden>
+  <header style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end">
+    <div>
+      <h1>Учёт завершённых рейсов</h1>
+      <p class="lead">Итоги за месяц считаются по дате завершения, по дату расчёта включительно. Нажмите на строку, чтобы изменить рейс.</p>
+    </div>
+    <div class="row-actions"><button class="btn" id="trips-csv">Экспорт CSV</button><button class="btn primary" id="add-trip">+ Рейс</button></div>
+  </header>
+  <div class="hero-result" id="trips-tiles"></div>
+  <div class="status" id="trips-status"></div>
+  <div class="tbl-wrap"><table id="trips-table">
+    <thead><tr>
+      <th>Дата</th><th>№ рейса</th><th>Маршрут</th><th class="n">Маршрут, км</th><th class="n">Доезд, км</th><th class="n">Общий, км</th>
+      <th class="n">Фрахт, €</th><th class="n">Сконто</th><th class="n">К получению, €</th><th class="n">€/км</th><th class="n">Маржа</th><th class="n">Прибыль, €</th>
+      <th class="n">Себест. без премии</th><th class="n">Премия</th><th class="n">Себест. с премией</th>
+      <th class="n">Дизель</th><th class="n">AdBlue</th><th class="n">Зарплата</th><th class="n">Постоянные</th><th class="n">Сборы</th><th class="n">Прочие</th><th>Статус</th>
+    </tr></thead>
+    <tbody id="trips-body"></tbody>
+    <tfoot id="trips-foot"></tfoot>
+  </table></div>
+</section>
+
+<!-- ============ ДИАГРАММЫ ============ -->
+<section class="view" id="view-charts" hidden>
+  <div>
+    <h1>Доходы, расходы и прибыль</h1>
+    <p class="lead" id="charts-lead"></p>
+  </div>
+  <div class="hero-result" id="charts-tiles"></div>
+  <div class="status" id="charts-status"></div>
+  <div class="grid2">
+    <div class="panel">
+      <header><h2>По неделям, €</h2></header>
+      <div class="chart-box"><canvas id="ch-weeks" aria-label="Доходы, расходы, прибыль и убытки по неделям"></canvas></div>
+    </div>
+    <div class="panel">
+      <header><h2>Финансовые итоги</h2></header>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Период</th><th>Даты</th><th class="n">Доход</th><th class="n">Расходы</th><th class="n">Итог</th></tr></thead>
+        <tbody id="weeks-body"></tbody>
+      </table></div>
+      <p class="note">Доход — фрахт до сконто. Расходы включают сконто, себестоимость, премию и дополнительные ТО и ремонты. Неделя — с понедельника (не ранее 1-го числа); рейс относится к неделе по дате завершения.</p>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="panel">
+      <header><h2>Пробег за неделю и месяц, км</h2></header>
+      <div class="chart-box"><canvas id="ch-km"></canvas></div>
+    </div>
+    <div class="panel">
+      <header><h2>С грузом и порожний, км</h2></header>
+      <div class="chart-box"><canvas id="ch-load"></canvas></div>
+      <p class="note" id="load-note"></p>
+    </div>
+    <div class="panel">
+      <header><h2>Прибыль по рейсам, €</h2></header>
+      <div class="chart-box"><canvas id="ch-trips"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ТО ============ -->
+<section class="view" id="view-maint" hidden>
+  <header style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end">
+    <div>
+      <h1>ТО и ремонты</h1>
+      <p class="lead">«Уже в расходах рейса» — затрата входит в себестоимость записанных рейсов. Иначе она добавляется к расходам месяца на диаграммах.</p>
+    </div>
+    <div class="row-actions"><button class="btn primary" id="add-maint">+ Запись</button></div>
+  </header>
+  <div class="hero-result" id="maint-tiles"></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Дата</th><th class="n">Одометр, км</th><th>Категория</th><th>Работы / детали</th><th>Сервис</th><th class="n">PLN</th><th class="n">Курс</th><th class="n">€</th><th class="n">Итого, €</th><th>В расходах рейса</th><th>№ рейса</th></tr></thead>
+    <tbody id="maint-body"></tbody>
+  </table></div>
+</section>
+
+</main>
+
+<dialog id="dlg"><form method="dialog" id="dlg-form"></form></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="tariffs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
