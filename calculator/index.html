@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ставка рейса</title>
+<title>Бортовой журнал Scania TKI7844U (водитель Андрей)</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
@@ -58,8 +58,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
 .top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding-block: 10px; }
-.brand { font: 800 18px/1.1 var(--font-display); letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
-.brand small { font: 500 12px var(--font-body); color: var(--muted); letter-spacing: 0; }
+.brand { font: 800 18px/1.2 var(--font-display); letter-spacing: -0.01em; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.brand small { font: 500 12px var(--font-body); color: var(--muted); letter-spacing: 0; white-space: nowrap; }
+.brand span small { font-size: 13px; margin-left: 4px; }
 nav.tabs { display: flex; gap: 2px; overflow-x: auto; flex: 1 1 auto; }
 nav.tabs button { border: 0; background: none; color: var(--muted); font: 600 14px var(--font-body); padding: 8px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
 nav.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
@@ -147,7 +148,7 @@ textarea.io { font-family: var(--font-mono); font-size: 12px; height: 220px; bac
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="brand">Ставка рейса <small id="hdr-month"></small></div>
+    <div class="brand"><span>Бортовой журнал Scania TKI7844U <small>водитель Андрей</small></span><small id="hdr-month"></small></div>
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="calc" aria-selected="true">Калькулятор</button>
       <button role="tab" data-tab="month">Месяц</button>
